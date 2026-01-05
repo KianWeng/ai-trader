@@ -1,0 +1,91 @@
+import type { StrategyMessage } from '@api/types';
+import { Card, Empty, Flex, List, Typography, Button, Spin } from 'antd';
+import dayjs from 'dayjs';
+
+interface Props {
+  messages?: StrategyMessage[];
+  loading?: boolean;
+  className?: string;
+  onStart?: () => void;
+  starting?: boolean;
+  embedded?: boolean;
+  manualTriggerEnabled?: boolean;
+}
+
+const StrategyChatCard = ({
+  messages,
+  loading,
+  className,
+  onStart,
+  starting,
+  embedded,
+  manualTriggerEnabled
+}: Props) => {
+  const orderedMessages = (messages ?? [])
+    .slice()
+    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+  const spinning = Boolean(loading || starting);
+  const allowManualTrigger = Boolean(manualTriggerEnabled);
+
+  const content = (
+    <Flex vertical gap={16} className="strategy-chat-panel">
+      <Flex justify="space-between" align="center" className="strategy-chat-panel__toolbar">
+        <Typography.Title level={5} className="strategy-chat-panel__title">
+          策略对话
+        </Typography.Title>
+        {onStart && allowManualTrigger && (
+          <Button type="primary" size="small" onClick={onStart} loading={starting}>
+            启动策略
+          </Button>
+        )}
+      </Flex>
+      {orderedMessages.length === 0 ? (
+        <Empty description="暂无对话记录" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ) : (
+        <div className="strategy-chat-history">
+          <List
+            dataSource={orderedMessages}
+            renderItem={(item) => (
+              <List.Item className="strategy-chat-message">
+                <Flex vertical gap={6}>
+                  <Flex align="center" gap={12} className="strategy-chat-message__meta">
+                    <Typography.Text type="secondary">
+                      {dayjs(item.createdAt).format('MM-DD HH:mm')}
+                    </Typography.Text>
+                    <Typography.Text type="secondary">会话 {item.sessionId}</Typography.Text>
+                  </Flex>
+                  <Typography.Paragraph
+                    className="strategy-chat-message__content"
+                    ellipsis={{
+                      rows: 3,
+                      expandable: 'collapsible',
+                      symbol: (expanded) => (expanded ? '收起' : '展开')
+                    }}
+                  >
+                    {item.summary}
+                  </Typography.Paragraph>
+                </Flex>
+              </List.Item>
+            )}
+          />
+        </div>
+      )}
+    </Flex>
+  );
+
+  if (embedded) {
+    return (
+      <Spin spinning={spinning}>
+        <div className={className}>{content}</div>
+      </Spin>
+    );
+  }
+
+  return (
+    <Card bordered={false} className={['strategy-chat-card', className].filter(Boolean).join(' ')}>
+      <Spin spinning={spinning}>{content}</Spin>
+    </Card>
+  );
+};
+
+export default StrategyChatCard;
